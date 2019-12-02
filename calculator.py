@@ -1,5 +1,7 @@
-import re
+#!/usr/bin/python
 
+import re
+import math
 
 class InputParser:
     """
@@ -7,34 +9,66 @@ class InputParser:
     """
     def __init__(self, constants = {}):
         self.constants = constants
-        self.constants['pi'] = 3.141592653589793
-        self.constants['e'] = 2.718281828459045
-        self.pemdas = ['*', '/', '+', '-']
+        self.constants['pi'] = "3.141592653589793"
+        self.constants['e'] = "2.718281828459045"
+        self.pemdas = ['^', '**', '*', '/', '+', '-']
+    
+    def parse_input(self, expression):
+        """
+        Parse user input and return the root of a syntax tree
+        :param expression a mathematical expression
+        :returns the root of a syntax tree
+        """
+        # token_list = []
+        token_list = expression.split(' ')
+        for i in range(len(token_list)):
+            if token_list[i] in self.constants:
+                token_list[i] = self.constants[token_list[i]]
+        # print(token_list)
+        # no_spaces = ''.join(init_list)
+        # print(no_spaces)
+        # for char in no_spaces:
+        #     if char in self.constants:
+        #         token_list.append(self.constants[char])
+        #     else:
+        #         token_list.append(char)
+        return self._make_tree(token_list, 0)
 
-    def make_tree(self, token_list, index)
-        for i in range(token_list)
-            if token_list[i] == pemdas[index]:
-                new_tree = Node(token_list[i], token_list[i - 1], token_list[i + 1])
-                token_list[i - 1] = new_tree
-                del token_list[i]
-                del token_list[i + 1]
-                break
-        if pemdas[index] in token_list:
-            self.make_tree(token_list, index)
+    def _make_tree(self, token_list, index):
+        while self.pemdas[index] in token_list:
+            for i in range(len(token_list) - 1):
+                if token_list[i] == self.pemdas[index]:
+                    new_node = Node(token_list[i], token_list[i-1], token_list[i+1])
+                    token_list[i-1] = new_node
+                    del token_list[i]
+                    del token_list[i]
+                    break
         if index < len(self.pemdas) - 1:
-            self.make_tree(token_list, index + 1)
-        return token_list[0]
-        
-    def _is_operand(self, value):
-        return value.isnumeric()
+            return self._make_tree(token_list, index + 1)
+        else:
+            return token_list[0]
+    
+    def evaluate(self, root):
+        return self._evaluate_tree(root)
+    
+    def _evaluate_tree(self, root):
+        if root.value == '^':
+            root.value = "**"
+        if self._is_number(root.value):
+            return float(root.value)
+        elif self._is_operator(root.value):
+            eval_string = "self._evaluate_tree(root.left)" + str(root.value) + "self._evaluate_tree(root.right)"
+            return eval(eval_string)
+    
+    def _is_number(self, value):
+        try:
+            float(value)
+            return True
+        except ValueError:
+            return False
     
     def _is_operator(self, value):
-        operator_regex = '^(\+|\-|\*|\\|\^)$'
-        return re.match(operator_regex, value)
-
-    def _check_operator(self, value, operator):
-        return value == operator
-
+        return value in self.pemdas
 
 class Node:
     """
@@ -42,39 +76,47 @@ class Node:
     """
     def __init__(self, value, left_child, right_child):
         self.value = value
-        self.left = left_child
-        self.right = right_child
+        if isinstance(left_child, str):
+            self.left = Node(left_child, None, None)
+        else:
+            self.left = left_child
+        if isinstance(right_child, str):
+            self.right = Node(right_child, None, None)
+        else:
+            self.right = right_child
 
 
 def print_tree(root):
-    h = get_height(root)
-    for i in range(1, h + 1):
-        print_level(root, i)
+    this_level = [root]
+    print_level(this_level)
 
-def print_level(root, level):
-    if root is None:
-        return
-    if level == 1:
-        print(root.value)
+
+def print_level(this_level):
+    next_level = []
+    for n in this_level:
+        print(n.value, end = ' '),
+        if n.left:
+            next_level.append(n.left)
+        if n.right:
+            next_level.append(n.right)
+    if next_level:
         print("\n")
-    elif level > 1:
-        print_level(root.left, level - 1)
-        print_level(root.right, level - 1)
+        print_level(next_level)
 
 
-def get_height(root):
-    """
-    Method to calulate the height of a tree
-    """
-    if root is None:
-        return 0
-    else:
-        left_height = height(root.left)
-        right_height = height(root.right)
-        return left_height + 1 if left_height > right_height else right_height + 1
+def run():
+    print("Type Exit to Quit")
+    print("Calculator: ")
+    while True:
+        expression = input()
+        parser = InputParser()
+        if expression.lower() == "exit":
+            return
+        tree = parser.parse_input(expression)
+        # print_tree(tree)
+        # calc = Evaluator()
+        print("RESULT = " + str(parser.evaluate(tree)))
 
 
-if __name__ = "__main__":
-    parser = InputParser()
-    expression = ['2', '+', '2', '*', '8', '/', '2', '*', '4']
-    print_tree(parser.make_tree(expression, 3))
+if __name__ == "__main__":
+    run()

@@ -19,20 +19,30 @@ class InputParser:
         :param expression a mathematical expression
         :returns the root of a syntax tree
         """
-        # token_list = []
-        token_list = expression.split(' ')
+        regex_string = self._build_regex_string()
+        # regex_string = re.compile(regex_string)
+        token_list = re.findall(regex_string, expression)
         for i in range(len(token_list)):
             if token_list[i] in self.constants:
                 token_list[i] = self.constants[token_list[i]]
-        # print(token_list)
-        # no_spaces = ''.join(init_list)
-        # print(no_spaces)
-        # for char in no_spaces:
-        #     if char in self.constants:
-        #         token_list.append(self.constants[char])
-        #     else:
-        #         token_list.append(char)
+        token_list = [x if x is not "^" else "**" for x in token_list]
         return self._make_tree(token_list, 0)
+    
+    def _build_regex_string(self):
+        """
+        Method to create a reg_ex string that matches all known expressions
+        """
+        regex_string = "(["
+        # match known expressions
+        for exp in self.pemdas:
+            regex_string = regex_string + "\\" + exp + "|"
+        regex_string = regex_string + "]|"
+        # Match Constants
+        for k in self.constants:
+            regex_string = regex_string + k + "|"
+        # Match numbers
+        regex_string = regex_string + "[0-9]*\.?[0-9]+)"
+        return regex_string
 
     def _make_tree(self, token_list, index):
         while self.pemdas[index] in token_list:
@@ -52,12 +62,10 @@ class InputParser:
         return self._evaluate_tree(root)
     
     def _evaluate_tree(self, root):
-        if root.value == '^':
-            root.value = "**"
         if self._is_number(root.value):
             return float(root.value)
         elif self._is_operator(root.value):
-            eval_string = "self._evaluate_tree(root.left)" + str(root.value) + "self._evaluate_tree(root.right)"
+            eval_string = str(self._evaluate_tree(root.left)) + str(root.value) + str(self._evaluate_tree(root.right))
             return eval(eval_string)
     
     def _is_number(self, value):
@@ -85,7 +93,6 @@ class Node:
         else:
             self.right = right_child
 
-
 def print_tree(root):
     this_level = [root]
     print_level(this_level)
@@ -103,19 +110,19 @@ def print_level(this_level):
         print("\n")
         print_level(next_level)
 
-
 def run():
     print("Type Exit to Quit")
     print("Calculator: ")
     while True:
-        expression = input()
-        parser = InputParser()
-        if expression.lower() == "exit":
-            return
-        tree = parser.parse_input(expression)
-        # print_tree(tree)
-        # calc = Evaluator()
-        print("RESULT = " + str(parser.evaluate(tree)))
+        try:
+            expression = input()
+            parser = InputParser()
+            if expression.lower() == "exit":
+                return
+            tree = parser.parse_input(expression)
+            print("RESULT = " + str(parser.evaluate(tree)))
+        except:
+            print("I am unable to evaluate that expression.")
 
 
 if __name__ == "__main__":

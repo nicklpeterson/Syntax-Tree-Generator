@@ -2,12 +2,19 @@
 
 import re
 import math
+import copy
+from collections import deque
+import tkinter as tk
 
 class InputParser:
     """
     A class to parse mathematical expressions from strings
     """
     def __init__(self, constants = {}):
+        """
+        :attribute constants: known constants
+        :attribute pemdas: known expressions that will be evaluated in the order of this list.
+        """
         self.constants = constants
         self.constants['pi'] = "3.141592653589793"
         self.constants['e'] = "2.718281828459045"
@@ -20,19 +27,26 @@ class InputParser:
         :returns the root of a syntax tree
         """
         regex_string = self._build_regex_string()
-        # regex_string = re.compile(regex_string)
         token_list = re.findall(regex_string, expression)
         for i in range(len(token_list)):
             if token_list[i] in self.constants:
                 token_list[i] = self.constants[token_list[i]]
         token_list = [x if x is not "^" else "**" for x in token_list]
         return self._make_tree(token_list, 0)
-    
+
+    def evaluate(self, root):
+        """
+        Recursively evaluate a mathematical syntax tree.
+        :param root: the root of a syntax tree
+        :returns the result
+        """
+        return self._evaluate_tree(root)
+
     def _build_regex_string(self):
         """
-        Method to create a reg_ex string that matches all known expressions
+        Create a reg_ex string that matches all known expressions
         """
-        regex_string = "(["
+        regex_string = "([\(|\)"
         # match known expressions
         for exp in self.pemdas:
             regex_string = regex_string + "\\" + exp + "|"
@@ -45,6 +59,13 @@ class InputParser:
         return regex_string
 
     def _make_tree(self, token_list, index):
+        """
+        Recursively build a syntax tree from a list of tokens
+        :param token_list: a list of syntax tokens that are numbers, parenthesis or in self.pemdas
+        :returns index: the index of the current expression that is being searched for.
+        """
+        if "(" in token_list or ")" in token_list:
+            self._check_parenthesis(token_list)
         while self.pemdas[index] in token_list:
             for i in range(len(token_list) - 1):
                 if token_list[i] == self.pemdas[index]:
@@ -57,11 +78,56 @@ class InputParser:
             return self._make_tree(token_list, index + 1)
         else:
             return token_list[0]
+
+    def _check_parenthesis(self, token_list):
+        """
+        Recursively ensure that all expressions in parenthesis are evaluated first
+        :param token_list: a list of syntax tokens that are numbers, parenthesis, or in self.pemdas 
+        """
+        start = None 
+        end = None 
+        sub_tree = None
+        d = deque()
+        # Find the open parenthesis
+        for i in range(len(token_list)):
+            if token_list[i] == "(":
+                start = i
+                break
     
-    def evaluate(self, root):
-        return self._evaluate_tree(root)
+        # If there is no open parenthesis remove closing parenthesis and return
+        if start is None:
+            while ")" in token_list :
+                token_list.remove(")")
+            return
+
+        # If there is no closing parenthesis remove open parenthesis
+        if not ")" in token_list:
+            while "(" in token_list:
+                token_list.remove("(")
+            return
+
+        # Find the location of the closing parenthesis
+        for i in range(start, len(token_list)):
+            if token_list[i] == ')':
+                d.popleft()
+            if token_list[i] == '(':
+                d.append(token_list[i])
+            if not d:
+                end = i
+                break
+
+        # Replace the expression in parenthesis with a syntax sub_tree
+        sub_tree = self._make_tree(token_list[start + 1 : end], 0)
+        if sub_tree:
+            token_list[start] = sub_tree
+            del token_list[start + 1: end + 1]
     
     def _evaluate_tree(self, root):
+        """
+        Helper method for evaluate..
+        :param root: the root of a syntax tree
+        :returns the result
+        """
         if self._is_number(root.value):
             return float(root.value)
         elif self._is_operator(root.value):
@@ -69,6 +135,12 @@ class InputParser:
             return eval(eval_string)
     
     def _is_number(self, value):
+        """
+        Check if a string is a number
+        :param value: value to check
+        :returns boolean
+        """
+        # TODO This is ugly, fix
         try:
             float(value)
             return True
@@ -76,6 +148,10 @@ class InputParser:
             return False
     
     def _is_operator(self, value):
+        """
+        Check if value is a known operator
+        :param value: the value to check
+        """
         return value in self.pemdas
 
 class Node:
@@ -83,6 +159,12 @@ class Node:
     A node in the expression tree
     """
     def __init__(self, value, left_child, right_child):
+        """
+        Create a Node. If a child is a string create a new Node for that child.
+        :param value: the value stored by this node
+        :param left_child: this Node's left child
+        :param right_child: this Node's right child
+        """
         self.value = value
         if isinstance(left_child, str):
             self.left = Node(left_child, None, None)
@@ -94,11 +176,19 @@ class Node:
             self.right = right_child
 
 def print_tree(root):
+    """
+    Print a tree using a level order traversal
+    :params root: the root of a binary tree
+    """
     this_level = [root]
-    print_level(this_level)
+    print_level_order(this_level)
 
 
-def print_level(this_level):
+def print_level_order(this_level):
+    """
+    Helper method for print tree
+    :params this_level: a list of nodes on the current level
+    """
     next_level = []
     for n in this_level:
         print(n.value, end = ' '),
@@ -110,7 +200,7 @@ def print_level(this_level):
         print("\n")
         print_level(next_level)
 
-def run():
+def run_console():
     print("Type Exit to Quit")
     print("Calculator: ")
     while True:
@@ -124,6 +214,28 @@ def run():
         except:
             print("I am unable to evaluate that expression.")
 
+def gui_evaluate(event, entry, res):
+    parser = InputParser()
+    tree = parser.parse_input(entry.get())
+    res.configure(text = "Result: " + str(parser.evaluate(tree)))
+
+
+def run_gui():
+    w = tk.Tk()
+    w.geometry("300x200")
+    tk.Label(w, text="Your Expression:").pack()
+    entry = tk.Entry(w)
+    entry.pack()
+    b1 = tk.Button(w, text = "GO")
+    res = tk.Label(w)
+    res.pack()
+    b1 = tk.Button(w, text = "GO")
+    b1.bind("<ButtonPress-1>", lambda event, arg=entry, res=res: gui_evaluate(event, arg, res))
+    b1.pack()
+    w.bind('<Return>', lambda event, arg=entry, res=res: gui_evaluate(event, arg, res))
+    w.mainloop()
+
 
 if __name__ == "__main__":
-    run()
+    # run_console()
+    run_gui()

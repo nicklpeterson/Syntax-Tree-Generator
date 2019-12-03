@@ -4,7 +4,6 @@ import re
 import math
 import copy
 from collections import deque
-import tkinter as tk
 
 class InputParser:
     """
@@ -200,6 +199,7 @@ def print_level_order(this_level):
         print("\n")
         print_level(next_level)
 
+
 def run_console():
     print("Type Exit to Quit")
     print("Calculator: ")
@@ -214,28 +214,6 @@ def run_console():
         except:
             print("I am unable to evaluate that expression.")
 
-def gui_evaluate(event, entry, res):
-    parser = InputParser()
-    tree = parser.parse_input(entry.get())
-    res.configure(text = "Result: " + str(parser.evaluate(tree)))
-
-
-def run_gui():
-    w = tk.Tk()
-    w.geometry("300x200")
-    tk.Label(w, text="Your Expression:").pack()
-    entry = tk.Entry(w)
-    entry.pack()
-    b1 = tk.Button(w, text = "GO")
-    res = tk.Label(w)
-    res.pack()
-    b1 = tk.Button(w, text = "GO")
-    b1.bind("<ButtonPress-1>", lambda event, arg=entry, res=res: gui_evaluate(event, arg, res))
-    b1.pack()
-    w.bind('<Return>', lambda event, arg=entry, res=res: gui_evaluate(event, arg, res))
-    w.mainloop()
-
 
 if __name__ == "__main__":
-    # run_console()
-    run_gui()
+    run_console()

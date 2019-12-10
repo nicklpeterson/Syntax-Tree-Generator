@@ -17,7 +17,8 @@ class InputParser:
         self.constants = constants
         self.constants['pi'] = "3.141592653589793"
         self.constants['e'] = "2.718281828459045"
-        self.pemdas = ['^', '**', '*', '/', '+', '-']
+        self.pemdas = []
+        self._initialize_pemdas()
     
     def parse_input(self, expression):
         """
@@ -41,14 +42,24 @@ class InputParser:
         """
         return self._evaluate_tree(root)
 
+    def _initialize_pemdas(self):
+        """
+        Initialize known operaters.
+        The order of operations is determined by the order operators are added to pemdas
+        """
+        self.pemdas.append(['^', '**'])
+        self.pemdas.append(['*', '%', '/'])
+        self.pemdas.append(['+','-'])
+
     def _build_regex_string(self):
         """
         Create a reg_ex string that matches all known expressions
         """
         regex_string = "([\(|\)"
         # match known expressions
-        for exp in self.pemdas:
-            regex_string = regex_string + "\\" + exp + "|"
+        for exp_list in self.pemdas:
+            for exp in exp_list:
+                regex_string = regex_string + "\\" + exp + "|"
         regex_string = regex_string + "]|"
         # Match Constants
         for k in self.constants:
@@ -65,9 +76,9 @@ class InputParser:
         """
         if "(" in token_list or ")" in token_list:
             self._check_parenthesis(token_list)
-        while self.pemdas[index] in token_list:
+        while list(set(self.pemdas[index]) & set(token_list)):
             for i in range(len(token_list) - 1):
-                if token_list[i] == self.pemdas[index]:
+                if token_list[i] in self.pemdas[index]:
                     new_node = Node(token_list[i], token_list[i-1], token_list[i+1])
                     token_list[i-1] = new_node
                     del token_list[i]
@@ -151,7 +162,10 @@ class InputParser:
         Check if value is a known operator
         :param value: the value to check
         """
-        return value in self.pemdas
+        is_operator = False
+        for op_list in self.pemdas:
+            is_operator = True if value in op_list else is_operator
+        return is_operator
 
 class Node:
     """
@@ -173,6 +187,7 @@ class Node:
             self.right = Node(right_child, None, None)
         else:
             self.right = right_child
+
 
 def print_tree(root):
     """
@@ -197,7 +212,7 @@ def print_level_order(this_level):
             next_level.append(n.right)
     if next_level:
         print("\n")
-        print_level(next_level)
+        print_level_order(next_level)
 
 
 def run_console():
@@ -210,7 +225,7 @@ def run_console():
             if expression.lower() == "exit":
                 return
             tree = parser.parse_input(expression)
-            print("RESULT = " + str(parser.evaluate(tree)))
+            print("RESULT = " + str(parser.evaluate(tree.root)))
         except:
             print("I am unable to evaluate that expression.")
 

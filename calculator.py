@@ -187,6 +187,26 @@ class Node:
             self.right = Node(right_child, None, None)
         else:
             self.right = right_child
+    
+    def __iter__(self):
+        return NodeIterator(self)
+
+class NodeIterator:
+    """
+    Iterator class
+    """
+    def __init__(self, tree):
+        self._tree = tree
+        self._index = 0
+
+    def __next__(self):
+        """
+        Returns the next child of the tree's children 
+        """
+        if self._index > 1:
+            raise StopIteration
+        self._index += 1
+        return self._tree.left if self._index == 1 else self._tree.right
 
 
 def print_tree(root):
@@ -225,7 +245,10 @@ def run_console():
             if expression.lower() == "exit":
                 return
             tree = parser.parse_input(expression)
-            print("RESULT = " + str(parser.evaluate(tree.root)))
+            print(tree.value)
+            for child in tree:
+                print(child.value)
+            print("RESULT = " + str(parser.evaluate(tree)))
         except:
             print("I am unable to evaluate that expression.")
 

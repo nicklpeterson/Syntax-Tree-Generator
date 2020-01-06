@@ -203,11 +203,15 @@ class NodeIterator:
         """
         Returns the next child of the tree's children 
         """
-        if self._index > 1:
+        if self._index > 1 or (not self._tree.left and not self._tree.right):
             raise StopIteration
         self._index += 1
-        return self._tree.left if self._index == 1 else self._tree.right
-
+        if self._index == 1:
+            if self._tree.left: 
+                return self._tree.left
+            elif self._tree.right:
+                self._index += None
+                return self._tree.right
 
 def print_tree(root):
     """

@@ -37,10 +37,10 @@ class Graphics:
             event, values = self.window.read()
             if event in (None, 'Make Tree'):
                 self._clear_graph()
-                #try:
-                self._make_syntax_tree(values)
-                #except:
-                #self._pop_up("I am unable to evaluate that expression.", "Error")
+                try:
+                    self._make_syntax_tree(values)
+                except:
+                    self._pop_up("I am unable to evaluate that expression.", "Error")
             if event in (None, 'graph') and self.draw_tree:
                 self._update_syntax_tree(values)
             if event in (None, 'Exit'):
@@ -69,11 +69,10 @@ class Graphics:
         self._bring_nodes_to_front()
 
     def evaluate_tree(self, root):
-        return self.parser.evaluate(root)
+        return round(self.parser.evaluate(root), 2)
     
     def _generate_tree(self, tree):
         draw_tree = dt.DrawTree(tree, NODE_SIZE, 375)
-        # draw_tree = dt.initialize(draw_tree)
         self._render_tree(draw_tree)
         return draw_tree
 
